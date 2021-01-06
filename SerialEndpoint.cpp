@@ -32,10 +32,10 @@ static uint8_t recBuffer[SERIAL_BUFF_SIZE];
 #define CMD_GET_MIXER_PUMP_STATE 0x0A
 
 //Set Commands
-#define CMD_SET_WATER_PUMP 0x0B
-#define CMD_SET_NUTRIENT_PUMP 0x0C
-#define CMD_SET_DOWNER_PUMP 0x0D
-#define CMD_SET_MIXER_PUMP 0x0E
+#define CMD_SET_WATER_PUMP_STATE 0x0B
+#define CMD_SET_NUTRIENT_PUMP_STATE 0x0C
+#define CMD_SET_DOWNER_PUMP_STATE 0x0D
+#define CMD_SET_MIXER_PUMP_STATE 0x0E
 
 
 static void attendSerial(char *data, uint8_t size)
@@ -58,6 +58,22 @@ static void attendSerial(char *data, uint8_t size)
   uint8_t msgType = data[0];
 
   //TODO:Check for commands
+
+  //Slave Device Commands Attends
+
+  //Attend Sensor Readings
+  if (self->attendGetSensorValueReq(msgType)) return;
+
+  //Attend Get Relay
+  if (self->attendGetPumpStateReq(msgType)) return;
+
+  //Attend Set Relay
+  if (self->attendSetPumpState(msgType, data))
+  {
+    self->sendConfirmation();
+    return;
+  } 
+ 
 }
 
 SerialEndpointClass::SerialEndpointClass()
@@ -134,22 +150,129 @@ void SerialEndpointClass::sendNack()
 
 
 // Master Device API Methods
-void SerialEndpointClass::getSensorValue(uint8_t sensorCommand)
+
+void SerialEndpointClass::getSensorValueReq(uint8_t sensorCommand)
 {
   this->sendCommand(sendCommand);
 }
 
-void SerialEndpointClass::getPumpState(uint8_t pumpCommand)
+void SerialEndpointClass::getPumpStateReq(uint8_t pumpCommand)
 {
   this->sendCommand(pumpCommand);
 }
 
-void SerialEndpointClass::setPumpState(uint8_t pumpCommand, uint8_t state)
+void SerialEndpointClass::setPumpStateReq(uint8_t pumpCommand, uint8_t state)
 {
   this->sendCommandValue8(pumpCommand, state);
 }
 
+// Slave Device API Methods
 
+void SerialEndpointClass::sendConfirmation()
+{
+  this->sendNack();
+}
+
+// void SerialEndpointClass::getSensorValueRes(uint8_t sensorCommand, uint16_t value)
+// {
+//   this->sendCommandValue16(sensorCommand, value);
+// }
+
+
+// void SerialEndpointClass::getPumpStateRes(uint8_t pumpCommand, uint8_t state)
+// {
+//   this->sendCommandValue8(pumpCommand, state);
+// }
+
+bool SerialEndpointClass::attendGetSensorValueReq(uint8_t sensorCommand)
+{
+  bool status = false;
+  uint16_t sensorVal = 0;
+  if (sensorCommand == CMD_GET_WATER_LEVEL)
+  {
+    //TODO: get water level
+    status = true;
+  }
+  else if (sensorCommand == CMD_GET_NUTRIENT_LEVEL)
+  {
+    //TODO: get nutrient level
+    status = true;
+  }
+  else if (sensorCommand == CMD_GET_PH_DOWNER_LEVEL)
+  {
+    //TODO: get ph downer level
+    status = true;
+  }
+  else if (sensorCommand == CMD_GET_TDS)
+  {
+    //TODO: get tds val
+    status = true;
+  }
+  else if (sensorCommand == CMD_GET_PH)
+  {
+    //TODO: get ph val
+    status = true;
+  }
+  /* Send sensor value */
+  this->sendCommandValue16(sensorCommand, sensorVal);
+  return status;
+}
+
+bool SerialEndpointClass::attendGetPumpStateReq(uint8_t pumpCommand)
+{
+  bool status = false;
+  uint8_t pumpState = 0;
+  if (pumpCommand == CMD_GET_WATER_PUMP_STATE)
+  {
+    //TODO: get water pump state
+    status = true;
+  }
+   else if (pumpCommand == CMD_GET_NUTRIENT_PUMP_STATE)
+  {
+    //TODO: get nutrient pump state
+    status = true;
+  }
+   else if (pumpCommand == CMD_GET_DOWNER_PUMP_STATE)
+  {
+    //TODO: get downer pump state
+    status = true;
+  }
+   else if (pumpCommand == CMD_GET_MIXER_PUMP_STATE)
+  {
+    //TODO: get mixer pump state
+    status = true;
+  }
+  this->sendCommand8(pumpCommand, pumpState);
+  return status;  
+}
+
+bool SerialEndpointClass::attendSetPumpStateReq(uint8_t pumpCommand, char * buffData)
+{
+  bool status = false;
+  uint8_t pumpState = buffData[1];
+  if (pumpCommand == CMD_SET_WATER_PUMP_STATE)
+  {
+    //TODO: set water pump state
+    status = true;
+  }
+   else if (pumpCommand == CMD_SET_NUTRIENT_PUMP_STATE)
+  {
+    //TODO: set nutrient pump state
+    status = true;
+  }
+   else if (pumpCommand == CMD_SET_DOWNER_PUMP_STATE)
+  {
+    //TODO: set downer pump state
+    status = true;
+  }
+   else if (pumpCommand == CMD_SET_MIXER_PUMP_STATE)
+  {
+    //TODO: set mixer pump state
+    status = true;
+  }
+
+  return status;
+}
 
 
 SerialEndpointClass SerialEndpoint;
