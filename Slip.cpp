@@ -38,15 +38,15 @@ void Slip::parseEscapes()
 
 void Slip::begin(unsigned long baud, void(*_onReceive)(char* data, uint8_t size))
 {
-	Serial.begin(baud);
+	BRIDGE_PORT.begin(baud);
 	onReceive = _onReceive;
 }
 
 void Slip::loop()
 {
-	if(Serial.available())
+	if(BRIDGE_PORT.available())
 	{
-		char recv = Serial.read();
+		char recv = BRIDGE_PORT.read();
 		if(SLIP_STATE_IDLE == state)
 		{
 			if(SLIP_END == recv)
@@ -86,23 +86,23 @@ void Slip::loop()
 
 void Slip::send(char* data, uint8_t size)
 {
-	Serial.write(SLIP_END);
+	BRIDGE_PORT.write(SLIP_END);
 	for(uint8_t i = 0; i < size; i++)
 	{
 		if(data[i] == SLIP_END)
 		{
-			Serial.write(SLIP_ESC);
-			Serial.write(SLIP_ESC_END);
+			BRIDGE_PORT.write(SLIP_ESC);
+			BRIDGE_PORT.write(SLIP_ESC_END);
 		}
 		else if(data[i] == SLIP_ESC)
 		{
-			Serial.write(SLIP_ESC);
-			Serial.write(SLIP_ESC_ESC);
+			BRIDGE_PORT.write(SLIP_ESC);
+			BRIDGE_PORT.write(SLIP_ESC_ESC);
 		}
 		else
 		{
-			Serial.write(data[i]);
+			BRIDGE_PORT.write(data[i]);
 		}
 	}
-	Serial.write(SLIP_END);
+	BRIDGE_PORT.write(SLIP_END);
 }
