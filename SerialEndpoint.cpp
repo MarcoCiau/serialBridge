@@ -38,25 +38,6 @@ static uint8_t recBuffer[SERIAL_BUFF_SIZE];
 #define CMD_SET_MIXER_PUMP 0x0E
 
 
-
-void SerialEndpointClass::sendAck()
-{
-  // First, command
-  buffer[0] = CMD_ACK;
-  uint8_t size = 1; 
-  size = appendCrc((char*)buffer, size);
-  slip.send((char*)buffer, size);
-}
-
-void SerialEndpointClass::sendNack()
-{
-  buffer[0] = CMD_NACK;
-  uint8_t size = 1; 
-  size = appendCrc((char*)buffer, size);
-  slip.send((char*)buffer, size);
-}
-
-
 static void attendSerial(char *data, uint8_t size)
 {
   // Data format here:
@@ -85,6 +66,49 @@ SerialEndpointClass::SerialEndpointClass()
   pairMode = false;
 }
 
+//Private Methods
+void SerialEndpointClass::sendCommand(uint8_t command)
+{
+  buffer[0] = command;
+  uint8_t size = 1;
+  size = appendCrc((char*)buffer, size);
+  slip.send((char*)buffer, size);
+}
+
+void SerialEndpointClass::sendCommandValue8(uint8_t command, uint8_t value) //for int and  bool values
+{
+  buffer[0] = command;
+  buffer[1] = value;
+  uint8_t size = 2;
+  size = appendCrc((char*)buffer, size);
+  this->send((char*)buffer, size);
+}
+
+void SerialEndpointClass::sendCommandValue16(uint8_t command, uint16_t value) //for float and  uint16_t values
+{
+  buffer[0] = command;
+  buffer[1] = value & 0xFF; //value LOW Byte
+  buffer[2] = (value >> 8) & 0xFF; //value HIGH Byte
+  uint8_t size = 3;
+  size = appendCrc((char*)buffer, size);// apend [crcLow][crcHigh]. New size = size + 2
+  this->send((char*)buffer, size);
+}
+
+uint8_t SerialEndpointClass::parseValue8(char * buff) //parse and get int or bool value 
+{
+  return buffer[1];
+}
+
+uint16_t SerialEndpointClass::parseValue16(char * buff) //parse and get uint16_t 
+{
+  uint16_t val;
+  val = buffer[1] & 0x00FF;
+  val |= ((uint16_t)buffer[2] << 8) & 0xFF00;
+  return val;
+}
+
+//Public Methods
+
 void SerialEndpointClass::begin()
 {
   Storage.begin();
@@ -97,6 +121,34 @@ void SerialEndpointClass::loop()
 {
   slip.loop();
 }
+
+void SerialEndpointClass::sendAck()
+{
+  this->sendCommand(CMD_ACK);
+}
+
+void SerialEndpointClass::sendNack()
+{
+  this->sendCommand(CMD_NACK);
+}
+
+
+// Master Device API Methods
+void SerialEndpointClass::getSensorValue(uint8_t sensorCommand)
+{
+  this->sendCommand(sendCommand);
+}
+
+void SerialEndpointClass::getPumpState(uint8_t pumpCommand)
+{
+  this->sendCommand(pumpCommand);
+}
+
+void SerialEndpointClass::setPumpState(uint8_t pumpCommand, uint8_t state)
+{
+  this->sendCommandValue8(pumpCommand, state);
+}
+
 
 
 
