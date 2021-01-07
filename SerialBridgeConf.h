@@ -13,6 +13,7 @@
 #define BRIDGE_PORT Serial
 #define BRIDGE_BAUD 9600
 
+#define DEBUG_PORT //TODO: define DEBUG PORT
 
 /* Communication Role Def*/
 
