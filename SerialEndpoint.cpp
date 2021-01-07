@@ -108,7 +108,7 @@ void SerialEndpointClass::sendCommandValue8(uint8_t command, uint8_t value) //fo
   buffer[1] = value;
   uint8_t size = 2;
   size = appendCrc((char*)buffer, size);
-  this->send((char*)buffer, size);
+  slip.send((char*)buffer, size);
 }
 
 void SerialEndpointClass::sendCommandValue16(uint8_t command, uint16_t value) //for float and  uint16_t values
@@ -118,19 +118,19 @@ void SerialEndpointClass::sendCommandValue16(uint8_t command, uint16_t value) //
   buffer[2] = (value >> 8) & 0xFF; //value HIGH Byte
   uint8_t size = 3;
   size = appendCrc((char*)buffer, size);// apend [crcLow][crcHigh]. New size = size + 2
-  this->send((char*)buffer, size);
+  slip.send((char*)buffer, size);
 }
 
 uint8_t SerialEndpointClass::parseValue8(char * buff) //parse and get int or bool value 
 {
-  return buffer[1];
+  return buff[1];
 }
 
 uint16_t SerialEndpointClass::parseValue16(char * buff) //parse and get uint16_t 
 {
   uint16_t val;
-  val = buffer[1] & 0x00FF;
-  val |= ((uint16_t)buffer[2] << 8) & 0xFF00;
+  val = buff[1] & 0x00FF;
+  val |= ((uint16_t)buff[2] << 8) & 0xFF00;
   return val;
 }
 
@@ -160,10 +160,8 @@ void SerialEndpointClass::waitForBufferResponse()
 
 void SerialEndpointClass::begin()
 {
-  Storage.begin();
   slip.begin(115200, attendSerial);
-  loadPreferences();
-  sendAck();  // Send ack for flushing any pending messages sent from the gateway before we were ready
+  this->sendAck();  // Send ack for flushing any pending messages sent from the gateway before we were ready
 }
 
 void SerialEndpointClass::loop()
@@ -186,7 +184,7 @@ void SerialEndpointClass::sendNack()
 #ifdef DEVICE_MASTER
 void SerialEndpointClass::getSensorValueReq(uint8_t sensorCommand)
 {
-  this->sendCommand(sendCommand);
+  this->sendCommand(sensorCommand);
   this->waitForBufferResponse();
 }
 
