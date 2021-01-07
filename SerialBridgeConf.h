@@ -5,7 +5,7 @@
 
 
 /* Serial Bridge Max Response Timeout Def */
-#define BRIDGE_RESP_TIMEOUT_MS 500
+#define BRIDGE_RESP_TIMEOUT_MS 700
 
 /* Serial Bridge Port, Baud and Pins Def */
 #define BRIDGE_TX_PIN TX

@@ -54,13 +54,22 @@ static void attendSerial(char *data, uint8_t size)
   }
 
   size = size - 2; //update buffer size (without CRC)
-
   uint8_t msgType = data[0];
 
-  //TODO:Check for commands
+  //Master Device Commands Attends
+  #ifdef DEVICE_MASTER
+  //Attend get sensor value commands response
+  if (self->attendGetSensorValueRes(msgType, data)) return;
+
+  //Attend get pump status commands reponse
+  if (self->attendGetPumpStateRes(msgType, data)) return;
+
+  //Attend set pump status commands reponse
+  if (self->attendSetPumpStateRes(msgType, data)) return;
+  #endif
 
   //Slave Device Commands Attends
-
+  #ifdef DEVICE_SLAVE
   //Attend Sensor Readings
   if (self->attendGetSensorValueReq(msgType)) return;
 
@@ -68,18 +77,20 @@ static void attendSerial(char *data, uint8_t size)
   if (self->attendGetPumpStateReq(msgType)) return;
 
   //Attend Set Relay
-  if (self->attendSetPumpState(msgType, data))
+  if (self->attendSetPumpStateReq(msgType, data))
   {
     self->sendConfirmation();
     return;
   } 
- 
+  #endif
 }
 
 SerialEndpointClass::SerialEndpointClass()
 {
   self = this;
-  pairMode = false;
+  _hadError = false;
+  waitingResponse = false;
+  responseTimeoutTimer = millis();
 }
 
 //Private Methods
@@ -123,6 +134,28 @@ uint16_t SerialEndpointClass::parseValue16(char * buff) //parse and get uint16_t
   return val;
 }
 
+void SerialEndpointClass::clearPendingErrorFlag()
+{
+  if (this->waitingResponse)
+  {
+    this->waitingResponse = false;
+    this->_hadError = false;
+  }
+}
+
+void SerialEndpointClass::waitForBufferResponse()
+{
+  responseTimeoutTimer = millis();
+  _hadError = false;
+  waitingResponse = true;
+  while(waitingResponse && (millis() - responseTimeoutTimer < BRIDGE_RESP_TIMEOUT_MS))
+  {
+    loop();
+  }
+  if(waitingResponse) _hadError = true;
+  waitingResponse = false;
+}
+
 //Public Methods
 
 void SerialEndpointClass::begin()
@@ -150,39 +183,150 @@ void SerialEndpointClass::sendNack()
 
 
 // Master Device API Methods
-
+#ifdef DEVICE_MASTER
 void SerialEndpointClass::getSensorValueReq(uint8_t sensorCommand)
 {
   this->sendCommand(sendCommand);
+  this->waitForBufferResponse();
 }
 
 void SerialEndpointClass::getPumpStateReq(uint8_t pumpCommand)
 {
   this->sendCommand(pumpCommand);
+  this->waitForBufferResponse();
 }
 
 void SerialEndpointClass::setPumpStateReq(uint8_t pumpCommand, uint8_t state)
 {
   this->sendCommandValue8(pumpCommand, state);
+  this->waitForBufferResponse();
 }
 
-// Slave Device API Methods
 
+bool SerialEndpointClass::attendGetSensorValueRes(uint8_t sensorCommand, char * buffData)
+{
+  bool status = false;
+  uint16_t sensorVal = 0;
+  sensorVal = this->parseValue16(buffData);
+  if (sensorCommand == CMD_GET_WATER_LEVEL)
+  {
+    //TODO: process and send water level
+    DEBUG_PORT.print("Water Level : ");
+    DEBUG_PORT.println(sensorVal);
+    status = true;
+  }
+  else if (sensorCommand == CMD_GET_NUTRIENT_LEVEL)
+  {
+    //TODO: process and send nutrient level
+    DEBUG_PORT.print("Nutrient Level : ");
+    DEBUG_PORT.println(sensorVal);
+    status = true;
+  }
+  else if (sensorCommand == CMD_GET_PH_DOWNER_LEVEL)
+  {
+    //TODO: process and send ph downer level
+    DEBUG_PORT.print("PH Downer Level : ");
+    DEBUG_PORT.println(sensorVal);
+    status = true;
+  }
+  else if (sensorCommand == CMD_GET_TDS)
+  {
+    //TODO: process and send tds val
+    DEBUG_PORT.print("TDS Value : ");
+    DEBUG_PORT.println((float)(sensorVal / 100.00));
+    status = true;
+  }
+  else if (sensorCommand == CMD_GET_PH)
+  {
+    //TODO: process and send ph val
+    DEBUG_PORT.print("PH Value : ");
+    DEBUG_PORT.println((float)(sensorVal / 100.00));
+    status = true;
+  }
+  this->clearPendingErrorFlag();
+  return status;
+}
+
+bool SerialEndpointClass::attendGetPumpStateRes(uint8_t pumpCommand, char * buffData)
+{
+  bool status = false;
+  uint8_t pumpState = buffData[1];
+  if (pumpCommand == CMD_GET_WATER_PUMP_STATE)
+  {
+    //TODO: process water pump state
+    DEBUG_PORT.print("Water Pump State : ");
+    DEBUG_PORT.println(pumpState);
+    status = true;
+  }
+   else if (pumpCommand == CMD_GET_NUTRIENT_PUMP_STATE)
+  {
+    //TODO: process nutrient pump state
+    DEBUG_PORT.print("Nutrient Pump State : ");
+    DEBUG_PORT.println(pumpState);
+    status = true;
+  }
+   else if (pumpCommand == CMD_GET_PH_DOWNER_PUMP_STATE)
+  {
+    //TODO: process downer pump state
+    DEBUG_PORT.print("Downer Pump State : ");
+    DEBUG_PORT.println(pumpState);
+    status = true;
+  }
+   else if (pumpCommand == CMD_GET_MIXER_PUMP_STATE)
+  {
+    //TODO: process mixer pump state
+    DEBUG_PORT.print("Mixer Pump State : ");
+    DEBUG_PORT.println(pumpState);
+    status = true;
+  }
+  this->clearPendingErrorFlag();
+  return status;
+}
+
+bool SerialEndpointClass::attendSetPumpStateRes(uint8_t pumpCommand, char * buffData)
+{
+  bool status = false;
+  uint8_t pumpState = buffData[1];
+  if (pumpCommand == CMD_GET_WATER_PUMP_STATE)
+  {
+    //TODO: process water pump state
+    DEBUG_PORT.print("Water Pump State - Confirmed : ");
+    DEBUG_PORT.println(pumpState);
+    status = true;
+  }
+   else if (pumpCommand == CMD_GET_NUTRIENT_PUMP_STATE)
+  {
+    //TODO: process nutrient pump state
+    DEBUG_PORT.print("Nutrient Pump State - Confirmed : ");
+    DEBUG_PORT.println(pumpState);
+    status = true;
+  }
+   else if (pumpCommand == CMD_GET_PH_DOWNER_PUMP_STATE)
+  {
+    //TODO: process downer pump state
+    DEBUG_PORT.print("Downer Pump State - Confirmed : ");
+    DEBUG_PORT.println(pumpState);
+    status = true;
+  }
+   else if (pumpCommand == CMD_GET_MIXER_PUMP_STATE)
+  {
+    //TODO: process mixer pump state
+    DEBUG_PORT.print("Mixer Pump State - Confirmed : ");
+    DEBUG_PORT.println(pumpState);
+    status = true;
+  }
+  this->clearPendingErrorFlag();
+  return status; 
+}
+
+#endif
+
+// Slave Device API Methods
+#ifdef DEVICE_SLAVE
 void SerialEndpointClass::sendConfirmation()
 {
   this->sendNack();
 }
-
-// void SerialEndpointClass::getSensorValueRes(uint8_t sensorCommand, uint16_t value)
-// {
-//   this->sendCommandValue16(sensorCommand, value);
-// }
-
-
-// void SerialEndpointClass::getPumpStateRes(uint8_t pumpCommand, uint8_t state)
-// {
-//   this->sendCommandValue8(pumpCommand, state);
-// }
 
 bool SerialEndpointClass::attendGetSensorValueReq(uint8_t sensorCommand)
 {
@@ -232,7 +376,7 @@ bool SerialEndpointClass::attendGetPumpStateReq(uint8_t pumpCommand)
     //TODO: get nutrient pump state
     status = true;
   }
-   else if (pumpCommand == CMD_GET_DOWNER_PUMP_STATE)
+   else if (pumpCommand == CMD_GET_PH_DOWNER_PUMP_STATE)
   {
     //TODO: get downer pump state
     status = true;
@@ -270,9 +414,16 @@ bool SerialEndpointClass::attendSetPumpStateReq(uint8_t pumpCommand, char * buff
     //TODO: set mixer pump state
     status = true;
   }
-
+  this->sendCommand8(pumpCommand, pumpState);
   return status;
 }
+#endif
 
+bool SerialEndpointClass::hadError()
+{
+  bool res = _hadError;
+  _hadError = false;
+  return res;
+}
 
 SerialEndpointClass SerialEndpoint;

@@ -1,5 +1,5 @@
 #include "Slip.h"
-
+#include "SerialBridgeConf.h"
 #define SLIP_END (char)0xC0
 #define SLIP_ESC (char)0xDB
 #define SLIP_ESC_END (char)0xDC
